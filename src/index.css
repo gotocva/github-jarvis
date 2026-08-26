@@ -31,6 +31,14 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-additions: var(--chart-additions);
+  --color-chart-deletions: var(--chart-deletions);
+  --color-chart-grid: var(--chart-grid);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -66,6 +74,20 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /*
+   * Chart palette. Categorical slots are assigned in this fixed order and never
+   * cycled; additions/deletions are the two poles of a diverging pair. Validated
+   * against the card surface these render on (#ffffff light, #171717 dark).
+   */
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  --chart-5: #e87ba4;
+  --chart-additions: #2a78d6;
+  --chart-deletions: #e34948;
+  --chart-grid: #e1e0d9;
 }
 
 .dark {
@@ -96,6 +118,16 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  /* The same hues re-stepped for the dark surface, not an automatic flip. */
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
+  --chart-5: #d55181;
+  --chart-additions: #3987e5;
+  --chart-deletions: #e66767;
+  --chart-grid: #2c2c2a;
 }
 
 @layer base {

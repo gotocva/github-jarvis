@@ -1,4 +1,5 @@
 import { useDeferredValue, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   ChevronDown,
   ExternalLink,
@@ -251,14 +252,20 @@ export function OrgUsers({
                         </AvatarFallback>
                       </Avatar>
                       <div>
+                        <Link
+                          to={`/orgs/${org}/users/${user.login}`}
+                          className="font-medium hover:underline"
+                        >
+                          {user.login}
+                        </Link>
                         <a
                           href={user.htmlUrl}
                           target="_blank"
                           rel="noreferrer noopener"
-                          className="inline-flex items-center gap-1 font-medium hover:underline"
+                          className="ml-1.5 inline-flex text-muted-foreground hover:text-foreground"
+                          aria-label={`Open ${user.login} on GitHub`}
                         >
-                          {user.login}
-                          <ExternalLink className="size-3 opacity-50" />
+                          <ExternalLink className="size-3" />
                         </a>
                         {isSelf && (
                           <p className="text-xs text-muted-foreground">That's you</p>

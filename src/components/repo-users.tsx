@@ -1,4 +1,5 @@
 import { useDeferredValue, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ExternalLink, Loader2, Search, ShieldOff, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { CacheNotice } from '@/components/cache-notice'
@@ -291,7 +292,12 @@ export function RepoUsers({ org, repo }: { org: string; repo: string }) {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium">{user.login}</p>
+                          <Link
+                            to={`/orgs/${org}/users/${user.login}`}
+                            className="font-medium hover:underline"
+                          >
+                            {user.login}
+                          </Link>
                           {self && <p className="text-xs text-muted-foreground">That's you</p>}
                         </div>
                       </div>

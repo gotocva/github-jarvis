@@ -45,11 +45,16 @@ layout:
   hold and drops their org membership.
 
 **Repository** — clicking a repo opens its own tab layout:
+- *Dashboard* — see Analytics below.
 - *Branches* — multi-select with bulk delete. The default branch and protected branches
   can't be selected. "Load commit dates" costs one call per branch and unlocks stale
   detection (`Stale only (90d+)` and `Select stale`) for cleaning up dead branches.
 - *Users* — the repo's collaborators with their permission, multi-select, bulk revoke.
   You can't revoke your own access.
+
+**User** — clicking a login anywhere opens that person's page:
+- *Dashboard* — see Analytics below.
+- *Repository access* — every repository they hold, with the permission.
 
 **Give Access** — pick an organization, multi-select users (or type any GitHub username
 to invite somebody new), multi-select repositories, choose Read / Write / Admin, and
@@ -60,6 +65,37 @@ are reported per pair.
 stored in IndexedDB. Filterable, exportable as JSON, and clearable. Cache reads are
 recorded too, under a `CACHE` method, so the log always explains where the data on
 screen came from.
+
+## Analytics
+
+Both Dashboard tabs are built from `GET /repos/{owner}/{repo}/stats/contributors`,
+which returns weekly commits, additions and deletions per contributor. That is one
+call per repository rather than walking `/commits` page by page, so a whole
+repository — or a person's whole footprint in an organization — costs a handful of
+requests instead of hundreds. The trade-off is that GitHub buckets by week, so the
+date filter resolves to week boundaries rather than exact days. GitHub answers 202
+while it builds that cache; the client retries with backoff and the UI says which
+repositories are still computing.
+
+The user dashboard scopes its fan-out to the repositories that person actually holds
+access to (from the org Users tab) rather than every repository in the organization.
+
+Each dashboard has a filter row that scopes everything below it:
+
+- A **date range** picker — presets first, custom range behind a hairline in the
+  footer.
+- A **multi-select**: repositories on the user dashboard, contributors on the
+  repository dashboard.
+
+Both then render the same four things: a KPI row, weekly commits over time, a ranked
+bar chart, a diverging added/removed chart, and a table view carrying every number.
+
+Chart colors are the validated palette in `src/index.css` (`--chart-*`), stepped
+separately for the light and dark surfaces. Categorical hues are assigned in fixed
+order and never cycled; bars over nominal categories all wear one hue rather than a
+value ramp; additions/removals use a diverging warm/cool pair around a neutral zero.
+Every chart ships a tooltip and a table-view twin, so no value is reachable only by
+hovering.
 
 ## Caching
 
@@ -113,6 +149,12 @@ src/
     orgs.ts            Organization list
     org-data.ts        Per-org repositories and users
     repo-data.ts       Per-repo branches and collaborators
-  pages/               login, dashboard, organization, repository, give-access, activity-log
-  components/          app shell, tab bodies, multi-select, cache/error banners, ui/ (shadcn)
+    analytics.ts       Pure aggregation: raw weekly stats -> chart-ready slices
+  store/
+    stats.ts           Per-repo contribution statistics
+    theme.ts           Light / dark / system
+  pages/               login, dashboard, organization, repository, user, give-access, activity-log
+  components/
+    dashboard/         Stat tiles, charts, table view, the shared analytics body
+    ...                app shell, tab bodies, multi-select, cache/error banners, ui/ (shadcn)
 ```

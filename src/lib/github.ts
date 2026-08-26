@@ -434,3 +434,70 @@ export function deleteBranch(
     },
   )
 }
+
+// ---------------------------------------------------------------------------
+// Contribution statistics
+// ---------------------------------------------------------------------------
+
+export interface StatWeek {
+  /** Unix seconds for the start (Sunday) of the week. */
+  w: number
+  /** Lines added. */
+  a: number
+  /** Lines deleted. */
+  d: number
+  /** Commits. */
+  c: number
+}
+
+export interface ContributorStat {
+  author: {
+    login: string
+    id: number
+    avatar_url: string
+    html_url: string
+  } | null
+  total: number
+  weeks: StatWeek[]
+}
+
+/** Thrown while GitHub is still computing a repository's statistics. */
+export class StatsPendingError extends GitHubError {
+  constructor(repo: string) {
+    super(`GitHub is still computing statistics for ${repo}. Try again in a moment.`, 202)
+    this.name = 'StatsPendingError'
+  }
+}
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+/**
+ * Weekly commits, additions and deletions per contributor — one call covers a
+ * whole repository, which is why the dashboards build on it rather than walking
+ * `/commits`. GitHub answers 202 while it builds the cache, so this retries.
+ */
+export async function getContributorStats(
+  owner: string,
+  repo: string,
+  token: string,
+  actor?: string,
+  { attempts = 4, backoffMs = 1500 }: { attempts?: number; backoffMs?: number } = {},
+): Promise<ContributorStat[]> {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const { data, status } = await ghRequest<ContributorStat[] | null>(
+      `/repos/${owner}/${repo}/stats/contributors`,
+      {
+        label: `Get contributor stats for ${owner}/${repo}`,
+        token,
+        actor,
+        okStatuses: [202, 204],
+      },
+    )
+
+    if (Array.isArray(data)) return data
+    // 204 means an empty repository; 202 means "computing, ask again".
+    if (status === 204) return []
+    if (attempt < attempts - 1) await sleep(backoffMs * (attempt + 1))
+  }
+  throw new StatsPendingError(`${owner}/${repo}`)
+}

@@ -10,6 +10,7 @@ import { LoginPage } from '@/pages/login'
 import { NotFoundPage } from '@/pages/not-found'
 import { OrganizationPage } from '@/pages/organization'
 import { RepositoryPage } from '@/pages/repository'
+import { UserPage } from '@/pages/user'
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/orgs/:org" element={<OrganizationPage />} />
             <Route path="/orgs/:org/repos/:repo" element={<RepositoryPage />} />
+            <Route path="/orgs/:org/users/:login" element={<UserPage />} />
             <Route path="/give-access" element={<GiveAccessPage />} />
             <Route path="/activity" element={<ActivityLogPage />} />
           </Route>

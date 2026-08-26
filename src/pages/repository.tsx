@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { ChevronRight, ExternalLink, Lock, RefreshCw, Unlock } from 'lucide-react'
 import { PageHeader } from '@/components/page-header'
 import { RepoBranches } from '@/components/repo-branches'
+import { RepoDashboard } from '@/components/dashboard/lazy'
 import { RepoUsers } from '@/components/repo-users'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -11,7 +12,7 @@ import { cn } from '@/lib/utils'
 import { useAuth } from '@/store/auth'
 import { repoKey, useRepoData } from '@/store/repo-data'
 
-const TABS = ['branches', 'users'] as const
+const TABS = ['dashboard', 'branches', 'users'] as const
 type Tab = (typeof TABS)[number]
 
 export function RepositoryPage() {
@@ -26,14 +27,15 @@ export function RepositoryPage() {
   const { loadRepo, loadBranches, loadUsers, invalidate } = useRepoData()
 
   const requested = searchParams.get('tab')
-  const tab: Tab = TABS.includes(requested as Tab) ? (requested as Tab) : 'branches'
+  const tab: Tab = TABS.includes(requested as Tab) ? (requested as Tab) : 'dashboard'
   const busy = Boolean(branchResource?.loading || userResource?.loading)
 
   useEffect(() => {
     if (!token || !org || !repo) return
     void loadRepo(org, repo, token, username ?? undefined)
+    // The dashboard loads its own statistics; don't fetch lists it won't show.
     if (tab === 'branches') void loadBranches(org, repo, token, username ?? undefined)
-    else void loadUsers(org, repo, token, username ?? undefined)
+    if (tab === 'users') void loadUsers(org, repo, token, username ?? undefined)
   }, [org, repo, tab, token, username, loadRepo, loadBranches, loadUsers])
 
   const refresh = () => {
@@ -41,7 +43,7 @@ export function RepositoryPage() {
     invalidate(key, username ?? undefined)
     void loadRepo(org, repo, token, username ?? undefined, true)
     if (tab === 'branches') void loadBranches(org, repo, token, username ?? undefined, true)
-    else void loadUsers(org, repo, token, username ?? undefined, true)
+    if (tab === 'users') void loadUsers(org, repo, token, username ?? undefined, true)
   }
 
   return (
@@ -92,6 +94,7 @@ export function RepositoryPage() {
         onValueChange={(value) => setSearchParams({ tab: value }, { replace: true })}
       >
         <TabsList>
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="branches">
             Branches
             {branchResource?.data && (
@@ -110,6 +113,9 @@ export function RepositoryPage() {
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="dashboard" className="mt-4">
+          <RepoDashboard org={org} repo={repo} />
+        </TabsContent>
         <TabsContent value="branches" className="mt-4">
           <RepoBranches org={org} repo={repo} />
         </TabsContent>
