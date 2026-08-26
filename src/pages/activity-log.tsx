@@ -104,6 +104,9 @@ export function ActivityLogPage() {
     ? Math.round(networkCalls.reduce((sum, e) => sum + e.durationMs, 0) / networkCalls.length)
     : 0
   const cacheHits = entries.length - networkCalls.length
+  // 304s reached GitHub but weren't charged against the rate limit.
+  const notModified = entries.filter((e) => e.notModified).length
+  const billed = networkCalls.length - notModified
 
   const handleClear = async () => {
     await clearActivity()
@@ -127,7 +130,7 @@ export function ActivityLogPage() {
     <>
       <PageHeader
         title="Activity Log"
-        description="Every GitHub API call this app makes, stored in this browser's IndexedDB."
+        description="Every GitHub API call this app makes, stored in this browser's IndexedDB. Cache hits and 304s cost no rate limit."
         actions={
           <>
             <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
@@ -176,14 +179,16 @@ export function ActivityLogPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardContent>
-            <p className="text-2xl font-semibold tabular-nums">{networkCalls.length}</p>
-            <p className="text-xs text-muted-foreground">GitHub API calls</p>
+            <p className="text-2xl font-semibold tabular-nums">{billed}</p>
+            <p className="text-xs text-muted-foreground">Rate-limited calls</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent>
-            <p className="text-2xl font-semibold tabular-nums">{cacheHits}</p>
-            <p className="text-xs text-muted-foreground">Served from cache</p>
+            <p className="text-2xl font-semibold tabular-nums">{cacheHits + notModified}</p>
+            <p className="text-xs text-muted-foreground">
+              Free ({cacheHits} cached, {notModified} not modified)
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -288,9 +293,11 @@ export function ActivityLogPage() {
                     <span
                       className={cn(
                         'inline-flex items-center gap-1 font-mono text-xs',
-                        entry.status === 'success'
-                          ? 'text-emerald-600 dark:text-emerald-400'
-                          : 'text-destructive',
+                        entry.status !== 'success'
+                          ? 'text-destructive'
+                          : entry.notModified
+                            ? 'text-amber-600 dark:text-amber-400'
+                            : 'text-emerald-600 dark:text-emerald-400',
                       )}
                     >
                       {entry.status === 'success' ? (

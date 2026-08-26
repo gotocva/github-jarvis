@@ -1,4 +1,5 @@
 import { recordActivity } from './activity-log'
+import { readHttpCache, touchHttpCache, writeHttpCache } from './http-cache'
 
 const API_ROOT = 'https://api.github.com'
 
@@ -95,6 +96,10 @@ export async function ghRequest<T>(
   const endpoint = url.replace(API_ROOT, '')
   const startedAt = performance.now()
 
+  // A conditional GET that comes back 304 is not charged against the rate
+  // limit, so re-reading unchanged data is free.
+  const cached = method === 'GET' ? await readHttpCache(url) : null
+
   let response: Response
   try {
     response = await fetch(url, {
@@ -103,6 +108,7 @@ export async function ghRequest<T>(
         Accept: 'application/vnd.github+json',
         Authorization: `Bearer ${token}`,
         'X-GitHub-Api-Version': '2022-11-28',
+        ...(cached ? { 'If-None-Match': cached.etag } : {}),
         ...(body ? { 'Content-Type': 'application/json' } : {}),
       },
       body: body ? JSON.stringify(body) : undefined,
@@ -126,6 +132,24 @@ export async function ghRequest<T>(
 
   const durationMs = Math.round(performance.now() - startedAt)
   const rateRemaining = response.headers.get('x-ratelimit-remaining')
+
+  if (response.status === 304 && cached) {
+    await touchHttpCache(url)
+    await recordActivity({
+      ts: Date.now(),
+      method,
+      url,
+      endpoint,
+      label: `${label} (not modified)`,
+      status: 'success',
+      statusCode: 304,
+      durationMs,
+      rateRemaining: rateRemaining === null ? undefined : Number(rateRemaining),
+      actor,
+      notModified: true,
+    })
+    return { data: cached.body as T, headers: response.headers, status: 200 }
+  }
 
   let payload: unknown = null
   if (response.status !== 204 && response.status !== 205) {
@@ -164,6 +188,11 @@ export async function ghRequest<T>(
       response.status,
       (payload as { documentation_url?: string })?.documentation_url,
     )
+  }
+
+  const etag = response.headers.get('etag')
+  if (method === 'GET' && etag && payload !== null) {
+    await writeHttpCache(url, etag, payload)
   }
 
   return { data: payload as T, headers: response.headers, status: response.status }
@@ -254,14 +283,6 @@ export function listOrganizations(token: string, actor?: string) {
     token,
     actor,
   })
-}
-
-export function getOrganization(org: string, token: string, actor?: string) {
-  return ghRequest<Organization & { name?: string; public_repos?: number }>(`/orgs/${org}`, {
-    label: `Get organization ${org}`,
-    token,
-    actor,
-  }).then((r) => r.data)
 }
 
 /**
@@ -357,13 +378,6 @@ export function removeOrgMembership(
   })
 }
 
-export function getUser(username: string, token: string, actor?: string) {
-  return ghRequest<GitHubUser>(`/users/${username}`, {
-    label: `Look up user ${username}`,
-    token,
-    actor,
-  }).then((r) => r.data)
-}
 
 // ---------------------------------------------------------------------------
 // Repository detail

@@ -34,6 +34,7 @@ import {
   SidebarMenuSkeleton,
   SidebarRail,
 } from '@/components/ui/sidebar'
+import { clearHttpCache } from '@/lib/http-cache'
 import { clearCache } from '@/lib/response-cache'
 import { useAuth } from '@/store/auth'
 import { useOrgStore } from '@/store/orgs'
@@ -60,6 +61,7 @@ export function AppSidebar() {
     useOrgStore.getState().reset()
     // Cached GitHub responses shouldn't outlive the session that fetched them.
     void clearCache()
+    void clearHttpCache()
     navigate('/login', { replace: true })
   }
 

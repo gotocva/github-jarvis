@@ -22,6 +22,20 @@ export interface ActivityEntry {
   actor?: string
   /** True when the app answered from the local cache instead of the network. */
   fromCache?: boolean
+  /** True when GitHub answered 304, which costs no rate limit. */
+  notModified?: boolean
+}
+
+/**
+ * A stored GitHub response plus its ETag, so the next request can be
+ * conditional. A 304 answer costs nothing against the rate limit.
+ */
+export interface HttpRecord {
+  /** Request URL, the cache key. */
+  url: string
+  etag: string
+  body: unknown
+  ts: number
 }
 
 export interface CacheRecord<T = unknown> {
@@ -42,10 +56,15 @@ export interface JarvisDB extends DBSchema {
     value: CacheRecord
     indexes: { cachedAt: number }
   }
+  http: {
+    key: string
+    value: HttpRecord
+    indexes: { ts: number }
+  }
 }
 
 const DB_NAME = 'github-jarvis'
-const DB_VERSION = 2
+const DB_VERSION = 3
 
 let dbPromise: Promise<IDBPDatabase<JarvisDB>> | null = null
 
@@ -65,6 +84,10 @@ export function getDB() {
         if (oldVersion < 2) {
           const cache = db.createObjectStore('cache', { keyPath: 'key' })
           cache.createIndex('cachedAt', 'cachedAt')
+        }
+        if (oldVersion < 3) {
+          const http = db.createObjectStore('http', { keyPath: 'url' })
+          http.createIndex('ts', 'ts')
         }
       },
     })

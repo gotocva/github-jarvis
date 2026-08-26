@@ -97,6 +97,24 @@ value ramp; additions/removals use a diverging warm/cool pair around a neutral z
 Every chart ships a tooltip and a table-view twin, so no value is reachable only by
 hovering.
 
+## Rate limit
+
+GitHub allows 5,000 authenticated REST calls an hour, and this app spends them in
+three places that multiply with the size of an organization: the org Users tab reads
+`/collaborators` once per repository, the branch view reads one commit per branch, and
+the user dashboard reads statistics once per repository.
+
+Two things keep that affordable:
+
+- **Conditional requests.** Every GET carries the ETag of the last response
+  (`If-None-Match`). GitHub answers `304 Not Modified` when nothing changed, which it
+  does **not** charge against the rate limit — so re-syncing unchanged data is free.
+  The bodies are kept in IndexedDB, because a 304 carries none.
+- **The response cache below** — a cache hit makes no request at all.
+
+The Activity Log separates "rate-limited calls" from free ones (cache hits plus 304s),
+so the cost of any action is visible.
+
 ## Caching
 
 Every list the app displays is written to IndexedDB. On a later visit the view is served
@@ -143,6 +161,8 @@ src/
     db.ts              IndexedDB schema (activity + cache stores)
     activity-log.ts    Writing and reading the API call log
     response-cache.ts  Cache read/write plus the resolveResource helper
+    http-cache.ts      ETag store behind conditional requests
+    github-resources.ts Cached reads shared by more than one caller
     github.ts          Every GitHub endpoint, logged through one choke point
   store/
     auth.ts            Session (persisted to localStorage)

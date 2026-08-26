@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { cacheKey, deleteCache, resolveResource, writeCache } from '@/lib/response-cache'
+import { cachedOrgMembers } from '@/lib/github-resources'
 import {
-  listOrgMembers,
   listOrgRepos,
   listOwnedRepos,
   listRepoCollaborators,
@@ -189,7 +189,9 @@ async function buildOrgUsers(
   // A personal account has no members — everyone on it is a repo collaborator.
   const members = isPersonalAccount(org)
     ? []
-    : await listOrgMembers(org, token, actor).catch(() => [])
+    : await cachedOrgMembers(org, token, actor, force)
+        .then((r) => r.data)
+        .catch(() => [])
   const memberLogins = new Set(members.map((m) => m.login.toLowerCase()))
 
   const byLogin = new Map<string, OrgUser>()

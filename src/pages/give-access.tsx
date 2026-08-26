@@ -37,10 +37,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { cacheKey, resolveResource } from '@/lib/response-cache'
+import { cachedOrgMembers } from '@/lib/github-resources'
 import {
   addCollaborator,
-  listOrgMembers,
   mapWithConcurrency,
   PERMISSION_LABELS,
   type AccessPermission,
@@ -99,13 +98,7 @@ export function GiveAccessPage() {
 
     let cancelled = false
     setMembersLoading(true)
-    resolveResource<GitHubUser[]>({
-      key: cacheKey(username ?? undefined, `org:${org}:members`),
-      label: `List members of ${org}`,
-      force: false,
-      actor: username ?? undefined,
-      fetcher: () => listOrgMembers(org, token, username ?? undefined),
-    })
+    cachedOrgMembers(org, token, username ?? undefined)
       .then(({ data }) => !cancelled && setMembers(data))
       .catch(() => !cancelled && setMembers([]))
       .finally(() => !cancelled && setMembersLoading(false))
