@@ -40,6 +40,16 @@ export const useAuth = create<AuthState>()(
 
 export const useIsAuthenticated = () => useAuth((s) => Boolean(s.token && s.user))
 
+/**
+ * True when `login` is the signed-in user's own account rather than a real
+ * organization. Read straight from the session so it doesn't depend on the
+ * organization list having loaded yet.
+ */
+export function isPersonalAccount(login: string) {
+  const { username } = useAuth.getState()
+  return Boolean(username && login.toLowerCase() === username.toLowerCase())
+}
+
 /** Credentials for API calls; throws if called from an unauthenticated view. */
 export function useCredentials() {
   const token = useAuth((s) => s.token)

@@ -1,9 +1,15 @@
 import { create } from 'zustand'
 import { listOrganizations, type Organization } from '@/lib/github'
 import { cacheKey, resolveResource } from '@/lib/response-cache'
+import { useAuth } from '@/store/auth'
+
+export interface Account extends Organization {
+  /** True for the signed-in user's own account rather than a real organization. */
+  personal: boolean
+}
 
 interface OrgState {
-  orgs: Organization[]
+  orgs: Account[]
   loading: boolean
   error: string | null
   loadedFor: string | null
@@ -14,7 +20,24 @@ interface OrgState {
   reset: () => void
 }
 
-/** Shared org cache so the sidebar and the pages don't each hit `/user/orgs`. */
+/**
+ * The signed-in account is presented alongside the organizations so personal
+ * repositories are reachable the same way. It's derived from the session rather
+ * than cached, since the cache holds the raw `/user/orgs` response.
+ */
+function personalAccount(): Account | null {
+  const { user } = useAuth.getState()
+  if (!user) return null
+  return {
+    login: user.login,
+    id: user.id,
+    avatar_url: user.avatar_url,
+    description: user.name ?? 'Your personal repositories',
+    personal: true,
+  }
+}
+
+/** Shared cache so the sidebar and the pages don't each hit `/user/orgs`. */
 export const useOrgStore = create<OrgState>((set, get) => ({
   orgs: [],
   loading: false,
@@ -35,8 +58,14 @@ export const useOrgStore = create<OrgState>((set, get) => ({
         actor,
         fetcher: () => listOrganizations(token, actor),
       })
+
+      const personal = personalAccount()
+      const organizations: Account[] = [...data]
+        .sort((a, b) => a.login.localeCompare(b.login))
+        .map((org) => ({ ...org, personal: false }))
+
       set({
-        orgs: [...data].sort((a, b) => a.login.localeCompare(b.login)),
+        orgs: personal ? [personal, ...organizations] : organizations,
         loading: false,
         loadedFor: actor ?? token,
         fromCache,

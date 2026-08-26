@@ -264,6 +264,18 @@ export function getOrganization(org: string, token: string, actor?: string) {
   }).then((r) => r.data)
 }
 
+/**
+ * Repositories owned by the signed-in account. A personal account has no
+ * `/orgs/{login}/repos` endpoint, so it needs this one instead.
+ */
+export function listOwnedRepos(token: string, actor?: string) {
+  return ghPaginate<Repository>('/user/repos?affiliation=owner&sort=updated', {
+    label: 'List your personal repositories',
+    token,
+    actor,
+  })
+}
+
 export function listOrgRepos(org: string, token: string, actor?: string) {
   return ghPaginate<Repository>(`/orgs/${org}/repos?sort=updated`, {
     label: `List repositories in ${org}`,

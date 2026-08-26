@@ -3,11 +3,13 @@ import { cacheKey, deleteCache, resolveResource, writeCache } from '@/lib/respon
 import {
   listOrgMembers,
   listOrgRepos,
+  listOwnedRepos,
   listRepoCollaborators,
   mapWithConcurrency,
   type Collaborator,
   type Repository,
 } from '@/lib/github'
+import { isPersonalAccount } from '@/store/auth'
 
 export type RepoRole = 'admin' | 'maintain' | 'write' | 'triage' | 'read'
 
@@ -79,7 +81,10 @@ export const useOrgData = create<OrgDataState>((set, get) => ({
         label: `List repositories in ${org}`,
         force,
         actor,
-        fetcher: () => listOrgRepos(org, token, actor),
+        fetcher: () =>
+          isPersonalAccount(org)
+            ? listOwnedRepos(token, actor)
+            : listOrgRepos(org, token, actor),
       })
       set((s) => ({
         repos: {
@@ -181,7 +186,10 @@ async function buildOrgUsers(
   await get().loadRepos(org, token, actor, force)
   const repos = get().repos[org]?.data ?? []
 
-  const members = await listOrgMembers(org, token, actor).catch(() => [])
+  // A personal account has no members — everyone on it is a repo collaborator.
+  const members = isPersonalAccount(org)
+    ? []
+    : await listOrgMembers(org, token, actor).catch(() => [])
   const memberLogins = new Set(members.map((m) => m.login.toLowerCase()))
 
   const byLogin = new Map<string, OrgUser>()

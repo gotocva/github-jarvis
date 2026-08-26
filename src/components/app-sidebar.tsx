@@ -109,7 +109,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Organizations</SidebarGroupLabel>
+          <SidebarGroupLabel>Accounts</SidebarGroupLabel>
           <SidebarGroupAction
             title="Refresh organizations"
             onClick={() => token && load(token, username ?? undefined, true)}
@@ -129,7 +129,7 @@ export function AppSidebar() {
               {!loading && orgs.length === 0 && !error && (
                 <SidebarMenuItem>
                   <div className="px-2 py-1.5 text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
-                    No organizations found for this token.
+                    No accounts found for this token.
                   </div>
                 </SidebarMenuItem>
               )}
@@ -157,7 +157,14 @@ export function AppSidebar() {
                         </AvatarFallback>
                       </Avatar>
                       <span className="truncate">{org.login}</span>
-                      <ChevronRight className="ml-auto size-3.5 opacity-40" />
+                      {org.personal && (
+                        <span className="ml-auto shrink-0 rounded-sm border px-1 text-[9px] leading-4 text-muted-foreground group-data-[collapsible=icon]:hidden">
+                          you
+                        </span>
+                      )}
+                      <ChevronRight
+                        className={cn('size-3.5 opacity-40', !org.personal && 'ml-auto')}
+                      />
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

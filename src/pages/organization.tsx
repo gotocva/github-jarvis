@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/page-header'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useAuth } from '@/store/auth'
+import { isPersonalAccount, useAuth } from '@/store/auth'
 import { useOrgData } from '@/store/org-data'
 import { useOrgStore } from '@/store/orgs'
 import { cn } from '@/lib/utils'
@@ -27,6 +27,7 @@ export function OrganizationPage() {
   const tab: Tab = TABS.includes(requested as Tab) ? (requested as Tab) : 'repositories'
 
   const details = orgs.find((o) => o.login.toLowerCase() === org.toLowerCase())
+  const personal = isPersonalAccount(org)
   const repoResource = repos[org]
   const userResource = users[org]
   const busy = Boolean(repoResource?.loading || userResource?.loading)
@@ -58,7 +59,11 @@ export function OrganizationPage() {
             {org}
           </span>
         }
-        description={details?.description ?? 'Repositories and access for this organization.'}
+        description={
+          personal
+            ? 'Your personal repositories and everyone who can reach them.'
+            : (details?.description ?? 'Repositories and access for this organization.')
+        }
         actions={
           <>
             <Button variant="outline" size="sm" onClick={refresh} disabled={busy}>
@@ -112,7 +117,11 @@ export function OrganizationPage() {
           <OrgRepositories org={org} />
         </TabsContent>
         <TabsContent value="users" className="mt-4">
-          <OrgUsers org={org} onNavigateToRepos={() => navigate(`/orgs/${org}?tab=repositories`)} />
+          <OrgUsers
+            org={org}
+            personal={personal}
+            onNavigateToRepos={() => navigate(`/orgs/${org}?tab=repositories`)}
+          />
         </TabsContent>
       </Tabs>
     </>

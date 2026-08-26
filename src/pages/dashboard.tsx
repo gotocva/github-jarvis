@@ -9,7 +9,6 @@ import {
   XCircle,
 } from 'lucide-react'
 import { CacheNotice } from '@/components/cache-notice'
-import { EmptyState } from '@/components/empty-state'
 import { PageHeader } from '@/components/page-header'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -45,7 +44,7 @@ export function DashboardPage() {
     <>
       <PageHeader
         title={`Welcome back, ${user?.login ?? 'there'}`}
-        description="Organizations, repository access and every API call this app makes."
+        description="Your repositories, organization access and every API call this app makes."
         actions={
           <Button
             variant="outline"
@@ -64,14 +63,14 @@ export function DashboardPage() {
           cachedAt={cachedAt ?? undefined}
           onSync={() => token && load(token, username ?? undefined, true)}
           syncing={loading}
-          label="Your organization list"
+          label="Your account list"
         />
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           icon={Building2}
-          label="Organizations"
+          label="Accounts"
           value={loading && orgs.length === 0 ? null : orgs.length}
         />
         <StatCard icon={Activity} label="Recent API calls" value={recent.length} />
@@ -91,9 +90,10 @@ export function DashboardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Your organizations</CardTitle>
+          <CardTitle>Your accounts</CardTitle>
           <CardDescription>
-            Open one to browse its repositories and the people who can reach them.
+            Your personal account and every organization this token can see. Open one to
+            browse its repositories and the people who can reach them.
           </CardDescription>
           <CardAction>
             <Button asChild size="sm">
@@ -117,13 +117,6 @@ export function DashboardPage() {
             <p className="text-sm text-destructive">{error}</p>
           )}
 
-          {!loading && !error && orgs.length === 0 && (
-            <EmptyState
-              icon={Building2}
-              title="No organizations"
-              description="This token can't see any organizations. A classic token needs the read:org scope, and SSO-protected orgs must have the token authorized."
-            />
-          )}
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {orgs.map((org) => (
@@ -139,7 +132,14 @@ export function DashboardPage() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0">
-                  <p className="truncate font-medium">{org.login}</p>
+                  <p className="flex items-center gap-1.5 truncate font-medium">
+                    {org.login}
+                    {org.personal && (
+                      <span className="shrink-0 rounded-sm border px-1 text-[10px] font-normal text-muted-foreground">
+                        you
+                      </span>
+                    )}
+                  </p>
                   <p className="truncate text-xs text-muted-foreground">
                     {org.description ?? 'No description'}
                   </p>
@@ -147,6 +147,14 @@ export function DashboardPage() {
               </Link>
             ))}
           </div>
+
+          {!loading && !error && orgs.every((org) => org.personal) && (
+            <p className="pt-4 text-sm text-muted-foreground">
+              No organizations visible to this token — only your personal repositories. A
+              classic token needs the <code className="font-mono">read:org</code> scope, and
+              SSO-protected organizations must have the token authorized.
+            </p>
+          )}
         </CardContent>
       </Card>
 

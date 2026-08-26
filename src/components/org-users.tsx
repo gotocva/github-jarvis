@@ -56,9 +56,12 @@ const ROLE_STYLES: Record<RepoRole, string> = {
 
 export function OrgUsers({
   org,
+  personal = false,
   onNavigateToRepos,
 }: {
   org: string
+  /** A personal account has no membership to revoke, only repository grants. */
+  personal?: boolean
   onNavigateToRepos?: () => void
 }) {
   const { token, username } = useAuth()
@@ -108,7 +111,7 @@ export function OrgUsers({
 
     let membershipRemoved = false
     let membershipError: string | null = null
-    if (user.isOrgMember) {
+    if (user.isOrgMember && !personal) {
       try {
         await removeOrgMembership(org, user.login, token, username ?? undefined)
         membershipRemoved = true
@@ -171,7 +174,11 @@ export function OrgUsers({
       <EmptyState
         icon={Users}
         title="No users found"
-        description={`Nobody has repository access in ${org} that this token can see.`}
+        description={
+          personal
+            ? `Nobody else has collaborator access to your repositories.`
+            : `Nobody has repository access in ${org} that this token can see.`
+        }
         action={
           onNavigateToRepos && (
             <Button variant="outline" size="sm" onClick={onNavigateToRepos}>
@@ -222,7 +229,9 @@ export function OrgUsers({
           <TableHeader>
             <TableRow>
               <TableHead>User</TableHead>
-              <TableHead className="hidden w-32 sm:table-cell">Membership</TableHead>
+              {!personal && (
+                <TableHead className="hidden w-32 sm:table-cell">Membership</TableHead>
+              )}
               <TableHead className="hidden min-w-56 md:table-cell">Repository access</TableHead>
               <TableHead className="w-32 text-right">Actions</TableHead>
             </TableRow>
@@ -255,17 +264,19 @@ export function OrgUsers({
                           <p className="text-xs text-muted-foreground">That's you</p>
                         )}
                         <p className="text-xs text-muted-foreground md:hidden">
-                          {user.isOrgMember ? 'Member' : 'Outside'} ·{' '}
+                          {!personal && `${user.isOrgMember ? 'Member' : 'Outside'} · `}
                           {user.access.length} repo{user.access.length === 1 ? '' : 's'}
                         </p>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    <Badge variant={user.isOrgMember ? 'secondary' : 'outline'}>
-                      {user.isOrgMember ? 'Member' : 'Outside'}
-                    </Badge>
-                  </TableCell>
+                  {!personal && (
+                    <TableCell className="hidden sm:table-cell">
+                      <Badge variant={user.isOrgMember ? 'secondary' : 'outline'}>
+                        {user.isOrgMember ? 'Member' : 'Outside'}
+                      </Badge>
+                    </TableCell>
+                  )}
                   <TableCell className="hidden whitespace-normal md:table-cell">
                     {user.access.length === 0 ? (
                       <span className="text-sm text-muted-foreground">
@@ -330,10 +341,18 @@ export function OrgUsers({
       <AlertDialog open={Boolean(target)} onOpenChange={(open) => !open && setTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove {target?.login} from {org}?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {personal
+                ? `Remove ${target?.login} from your repositories?`
+                : `Remove ${target?.login} from ${org}?`}
+            </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2">
-                <p>This revokes their access across the whole organization:</p>
+                <p>
+                  {personal
+                    ? 'This revokes their access to every repository you own:'
+                    : 'This revokes their access across the whole organization:'}
+                </p>
                 <ul className="list-inside list-disc space-y-1">
                   {target && target.access.length > 0 && (
                     <li>
@@ -341,11 +360,12 @@ export function OrgUsers({
                       {target.access.length === 1 ? 'y' : 'ies'}
                     </li>
                   )}
-                  {target?.isOrgMember && <li>Organization membership revoked</li>}
+                  {target?.isOrgMember && !personal && <li>Organization membership revoked</li>}
                 </ul>
                 <p>
-                  Access granted through a team is managed by that team and will not be
-                  changed here. This cannot be undone from this app.
+                  {!personal &&
+                    'Access granted through a team is managed by that team and will not be changed here. '}
+                  This cannot be undone from this app.
                 </p>
               </div>
             </AlertDialogDescription>

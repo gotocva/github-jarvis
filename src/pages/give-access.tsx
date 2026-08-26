@@ -46,7 +46,7 @@ import {
   type AccessPermission,
   type GitHubUser,
 } from '@/lib/github'
-import { useAuth } from '@/store/auth'
+import { isPersonalAccount, useAuth } from '@/store/auth'
 import { useOrgData } from '@/store/org-data'
 import { useOrgStore } from '@/store/orgs'
 
@@ -89,6 +89,13 @@ export function GiveAccessPage() {
     setSelectedRepos([])
     setResults(null)
     void loadRepos(org, token, username ?? undefined)
+
+    // A personal account has no members, so there is nothing to suggest from.
+    if (isPersonalAccount(org)) {
+      setMembers([])
+      setMembersLoading(false)
+      return
+    }
 
     let cancelled = false
     setMembersLoading(true)
@@ -220,12 +227,12 @@ export function GiveAccessPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="organization">Organization</Label>
+                <Label htmlFor="organization">Organization or account</Label>
                 <Select value={org} onValueChange={handleOrgChange} disabled={submitting}>
                   <SelectTrigger id="organization" className="w-full">
                     <SelectValue
                       placeholder={
-                        orgsLoading ? 'Loading organizations…' : 'Select an organization'
+                        orgsLoading ? 'Loading accounts…' : 'Select an organization or account'
                       }
                     />
                   </SelectTrigger>
@@ -233,6 +240,9 @@ export function GiveAccessPage() {
                     {orgs.map((option) => (
                       <SelectItem key={option.id} value={option.login}>
                         {option.login}
+                        {option.personal && (
+                          <span className="text-xs text-muted-foreground">personal</span>
+                        )}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -254,8 +264,9 @@ export function GiveAccessPage() {
                   customLabel={(input) => `Add "${input}"`}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Type any GitHub username and press Enter to include somebody who isn't a
-                  member yet — they'll receive an invitation.
+                  {org && isPersonalAccount(org)
+                    ? "Personal accounts have no members, so type each GitHub username and press Enter — they'll receive an invitation."
+                    : "Type any GitHub username and press Enter to include somebody who isn't a member yet — they'll receive an invitation."}
                 </p>
               </div>
 
@@ -339,7 +350,7 @@ export function GiveAccessPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              <SummaryRow label="Organization" value={org || '—'} />
+              <SummaryRow label="Account" value={org || '—'} />
               <SummaryRow label="Users" value={String(selectedUsers.length)} />
               <SummaryRow label="Repositories" value={String(selectedRepos.length)} />
               <SummaryRow label="Permission" value={PERMISSION_LABELS[permission]} />
