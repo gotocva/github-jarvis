@@ -81,7 +81,7 @@ export function OrganizationPage() {
               </a>
             </Button>
             <Button size="sm" asChild>
-              <Link to={`/give-access?org=${encodeURIComponent(org)}`}>
+              <Link to={`/access?tab=give&org=${encodeURIComponent(org)}`}>
                 <UserPlus className="size-4" />
                 Give access
               </Link>

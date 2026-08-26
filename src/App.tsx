@@ -5,7 +5,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { AppLayout } from '@/layouts/app-layout'
 import { ActivityLogPage } from '@/pages/activity-log'
 import { DashboardPage } from '@/pages/dashboard'
-import { GiveAccessPage } from '@/pages/give-access'
+import { AccessManagementPage } from '@/pages/access-management'
 import { LoginPage } from '@/pages/login'
 import { NotFoundPage } from '@/pages/not-found'
 import { OrganizationPage } from '@/pages/organization'
@@ -30,7 +30,9 @@ export default function App() {
             <Route path="/orgs/:org" element={<OrganizationPage />} />
             <Route path="/orgs/:org/repos/:repo" element={<RepositoryPage />} />
             <Route path="/orgs/:org/users/:login" element={<UserPage />} />
-            <Route path="/give-access" element={<GiveAccessPage />} />
+            <Route path="/access" element={<AccessManagementPage />} />
+            {/* The old path is still linked from bookmarks. */}
+            <Route path="/give-access" element={<Navigate to="/access" replace />} />
             <Route path="/activity" element={<ActivityLogPage />} />
           </Route>
           <Route path="*" element={<NotFoundPage />} />

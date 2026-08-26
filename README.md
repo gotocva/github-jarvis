@@ -56,10 +56,22 @@ layout:
 - *Dashboard* — see Analytics below.
 - *Repository access* — every repository they hold, with the permission.
 
-**Give Access** — pick an organization, multi-select users (or type any GitHub username
-to invite somebody new), multi-select repositories, choose Read / Write / Admin, and
-submit. Every user × repository pair is applied with bounded concurrency and the results
-are reported per pair.
+**Access Management** — two tabs:
+
+- *Give access* — pick an organization or your own account, multi-select users (or type
+  any GitHub username to invite somebody new), multi-select repositories, choose
+  Read / Write / Admin, and submit. Every user × repository pair is applied with bounded
+  concurrency and the results are reported per pair.
+- *Revoke access* — type a username, search, and get every repository that account can
+  reach across **all** organizations and your personal repositories, with the permission
+  on each. Everything is pre-selected, so revoking the lot is one click; organization
+  membership is offered alongside, since repo access alone often isn't the whole grant.
+
+  The search reads live rather than from cache. A stale list answering "no access" for
+  somebody who has it is the one wrong answer an audit screen must not give, and
+  conditional requests make the re-read cheap. For the same reason, an organization
+  whose repositories could not be read is reported as skipped rather than silently
+  counted as clean.
 
 **Activity Log** — every GitHub call, with method, status, duration, endpoint and error,
 stored in IndexedDB. Filterable, exportable as JSON, and clearable. Cache reads are

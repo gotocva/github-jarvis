@@ -97,7 +97,7 @@ export function DashboardPage() {
           </CardDescription>
           <CardAction>
             <Button asChild size="sm">
-              <Link to="/give-access">
+              <Link to="/access">
                 <UserPlus className="size-4" />
                 Give access
               </Link>

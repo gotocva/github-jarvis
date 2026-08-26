@@ -195,6 +195,7 @@ async function buildOrgUsers(
   const memberLogins = new Set(members.map((m) => m.login.toLowerCase()))
 
   const byLogin = new Map<string, OrgUser>()
+  let failedRepos = 0
 
   await mapWithConcurrency(
     repos,
@@ -222,6 +223,7 @@ async function buildOrgUsers(
       } catch {
         // A repo we can't read collaborators for shouldn't sink the whole list;
         // the failure is already visible in the activity log.
+        failedRepos += 1
       }
     },
     (done, total) =>
@@ -229,6 +231,14 @@ async function buildOrgUsers(
         users: { ...s.users, [org]: { ...s.users[org], progress: { done, total } } },
       })),
   )
+
+  // If nothing could be read, an empty list is not a finding — caching it would
+  // later be indistinguishable from "this person has no access anywhere".
+  if (repos.length > 0 && failedRepos === repos.length) {
+    throw new Error(
+      `Could not read collaborators for any of the ${repos.length} repositories in ${org}.`,
+    )
+  }
 
   // Org members with no repo-level grant still belong in the list.
   for (const member of members) {

@@ -42,7 +42,7 @@ import { cn } from '@/lib/utils'
 
 const mainNav = [
   { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
-  { title: 'Give Access', url: '/give-access', icon: UserPlus },
+  { title: 'Access Management', url: '/access', icon: UserPlus },
   { title: 'Activity Log', url: '/activity', icon: ScrollText },
 ]
 

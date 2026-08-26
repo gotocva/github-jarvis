@@ -10,7 +10,6 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { MultiSelect, type MultiSelectOption } from '@/components/multi-select'
-import { PageHeader } from '@/components/page-header'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -62,7 +61,7 @@ const PERMISSION_HINTS: Record<AccessPermission, string> = {
   admin: 'Full control including settings, collaborators and deletion.',
 }
 
-export function GiveAccessPage() {
+export function GiveAccessForm() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { token, username } = useAuth()
   const orgs = useOrgStore((s) => s.orgs)
@@ -147,7 +146,15 @@ export function GiveAccessPage() {
 
   const handleOrgChange = (value: string) => {
     setOrg(value)
-    setSearchParams({ org: value }, { replace: true })
+    // Merge rather than replace, so the active tab survives.
+    setSearchParams(
+      (previous) => {
+        const next = new URLSearchParams(previous)
+        next.set('org', value)
+        return next
+      },
+      { replace: true },
+    )
   }
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -202,12 +209,7 @@ export function GiveAccessPage() {
   }
 
   return (
-    <>
-      <PageHeader
-        title="Give access"
-        description="Grant repository permissions to one or many users in a single pass."
-      />
-
+    <div className="space-y-6">
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <Card>
           <CardHeader>
@@ -413,7 +415,7 @@ export function GiveAccessPage() {
           </CardContent>
         </Card>
       )}
-    </>
+    </div>
   )
 }
 
